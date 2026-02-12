@@ -4,13 +4,11 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 import allure
 
-
 def pytest_addoption(parser):
     parser.addoption('--browser', action='store', default='chrome',
                      help='Choose browser: chrome or firefox')
     parser.addoption('--headless', action='store_true',
                      help='Run tests in headless mode')
-
 
 @pytest.fixture(scope='function')
 def driver(request):
@@ -23,6 +21,7 @@ def driver(request):
             options.add_argument('--headless')
         options.add_argument('--window-size=1920,1080')
         options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(options=options)
     elif browser_name == 'firefox':
         options = FirefoxOptions()
@@ -32,11 +31,11 @@ def driver(request):
     else:
         raise pytest.UsageError('--browser should be chrome or firefox')
     
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(5)
+    driver.maximize_window()
     
     yield driver
     
-    # Делаем скриншот при падении теста
     if request.node.rep_call.failed:
         try:
             allure.attach(
@@ -48,7 +47,6 @@ def driver(request):
             pass
     
     driver.quit()
-
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):

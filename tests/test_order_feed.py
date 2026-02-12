@@ -1,42 +1,26 @@
-import pytest
 import allure
-import time
-from selenium.webdriver.common.by import By
-
+from pages.order_feed_page import OrderFeedPage
 
 @allure.feature("Лента заказов")
 class TestOrderFeed:
-    
+
     @allure.title("Детали заказа")
-    @pytest.mark.parametrize('driver', ['chrome'], indirect=True)
     def test_order_details_modal(self, driver):
-        """Проверка деталей заказа"""
-        driver.get("https://stellarburgers.education-services.ru/feed")
-        time.sleep(2)
-        
-        # Ищем заказы
-        orders = driver.find_elements(By.XPATH, "//li[contains(@class, 'OrderHistory')] or //div[contains(@class, 'OrderCard')]")
-        if orders:
-            orders[0].click()
-            time.sleep(2)
-            
-            # Проверяем что открылось модальное окно
-            modals = driver.find_elements(By.XPATH, "//div[contains(@class, 'Modal')]")
-            assert len(modals) > 0
-    
+        order_feed = OrderFeedPage(driver)
+        order_feed.open()
+        order_feed.click_first_order()
+        assert order_feed.is_order_modal_open() is True
+        order_feed.close_order_modal()
+        order_feed.wait_for_element_invisible(order_feed.locators.ORDER_MODAL)
+
     @allure.title("Счетчики заказов")
-    @pytest.mark.parametrize('driver', ['chrome'], indirect=True)
     def test_order_counters(self, driver):
-        """Проверка счетчиков заказов"""
-        driver.get("https://stellarburgers.education-services.ru/feed")
-        time.sleep(2)
-        
-        # Ищем счетчики
-        counters = driver.find_elements(By.XPATH, "//p[contains(text(), 'Выполнено') or contains(text(), 'выполнено')]")
-        print(f"Найдено счетчиков: {len(counters)}")
-        
-        # Проверяем что счетчики отображаются
-        if counters:
-            for counter in counters:
-                if counter.is_displayed():
-                    print(f"Счетчик: {counter.text}")
+        order_feed = OrderFeedPage(driver)
+        order_feed.open()
+        # Проверяем, что счетчики отображаются и содержат числа
+        total = order_feed.get_total_orders_counter()
+        today = order_feed.get_today_orders_counter()
+        assert total.isdigit()
+        assert today.isdigit()
+        # Можно также проверить, что они увеличиваются после создания заказа,
+        # но это тест с логином — в рамках данного теста просто проверяем наличие

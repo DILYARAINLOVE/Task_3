@@ -1,95 +1,43 @@
-import pytest
 import allure
-import time
-from selenium.webdriver.common.by import By
-
+from pages.main_page import MainPage
 
 @allure.feature("Основной функционал")
 class TestMainFunctionality:
-    
+
     @allure.title("Переход в конструктор")
-    @pytest.mark.parametrize('driver', ['chrome'], indirect=True)
     def test_go_to_constructor(self, driver):
-        """Проверка перехода в конструктор"""
-        # Идем в ленту заказов
-        driver.get("https://stellarburgers.education-services.ru/feed")
-        time.sleep(2)
-        
-        # Ищем ссылку на конструктор
-        constructor_links = driver.find_elements(By.XPATH, "//*[contains(text(), 'Конструктор') or contains(text(), 'конструктор')]")
-        for link in constructor_links:
-            if link.is_displayed():
-                link.click()
-                break
-        
-        time.sleep(2)
-        
-        # Проверяем что вернулись на главную
-        assert "stellarburgers" in driver.current_url
-    
+        main_page = MainPage(driver)
+        main_page.open()
+        # Сначала переходим в ленту заказов, чтобы проверить возврат в конструктор
+        main_page.click_order_feed()
+        main_page.wait_for_url_contains("feed")
+        main_page.click_constructor()
+        main_page.wait_for_url_to_be("https://stellarburgers.education-services.ru/")
+        assert main_page.get_current_url() == "https://stellarburgers.education-services.ru/"
+
     @allure.title("Переход в ленту заказов")
-    @pytest.mark.parametrize('driver', ['chrome'], indirect=True)
     def test_go_to_order_feed(self, driver):
-        """Проверка перехода в ленту заказов"""
-        driver.get("https://stellarburgers.education-services.ru/")
-        time.sleep(2)
-        
-        # Ищем ссылку на ленту заказов
-        feed_links = driver.find_elements(By.XPATH, "//*[contains(text(), 'Лента') or contains(text(), 'лента') or contains(text(), 'Заказов') or contains(text(), 'заказов')]")
-        for link in feed_links:
-            if link.is_displayed():
-                link.click()
-                break
-        
-        time.sleep(2)
-        
-        # Проверяем URL
-        assert "feed" in driver.current_url
-    
+        main_page = MainPage(driver)
+        main_page.open()
+        main_page.click_order_feed()
+        main_page.wait_for_url_contains("feed")
+        assert "feed" in main_page.get_current_url()
+
     @allure.title("Модальное окно ингредиента")
-    @pytest.mark.parametrize('driver', ['chrome'], indirect=True)
     def test_ingredient_details_modal(self, driver):
-        """Проверка модального окна ингредиента"""
-        driver.get("https://stellarburgers.education-services.ru/")
-        time.sleep(2)
-        
-        # Ищем первый ингредиент
-        ingredients = driver.find_elements(By.XPATH, "//div[contains(@class, 'BurgerIngredient')]")
-        if ingredients:
-            ingredients[0].click()
-            time.sleep(2)
-            
-            # Ищем модальное окно
-            modals = driver.find_elements(By.XPATH, "//div[contains(@class, 'Modal') or contains(@class, 'modal')]")
-            assert len(modals) > 0
-            
-            # Закрываем модальное окно
-            close_buttons = driver.find_elements(By.XPATH, "//button[contains(@class, 'close')]")
-            for button in close_buttons:
-                if button.is_displayed():
-                    button.click()
-                    break
-            
-            time.sleep(1)
-    
+        main_page = MainPage(driver)
+        main_page.open()
+        main_page.click_ingredient(0)
+        assert main_page.is_modal_open() is True
+        main_page.close_modal()
+        main_page.wait_for_modal_closed()
+        # Дополнительная проверка, что модальное окно закрыто
+        assert main_page.is_modal_open() is False
+
     @allure.title("Счетчик ингредиента")
-    @pytest.mark.parametrize('driver', ['chrome'], indirect=True)
     def test_ingredient_counter(self, driver):
-        """Проверка счетчика ингредиента"""
-        driver.get("https://stellarburgers.education-services.ru/")
-        time.sleep(2)
-        
-        # Ищем ингредиенты
-        ingredients = driver.find_elements(By.XPATH, "//div[contains(@class, 'BurgerIngredient')]")
-        if ingredients:
-            # Ищем счетчики
-            counters = driver.find_elements(By.XPATH, "//div[contains(@class, 'counter')]")
-            print(f"Найдено счетчиков: {len(counters)}")
-            
-            # Если есть счетчики, проверяем их
-            if counters:
-                for counter in counters:
-                    if counter.is_displayed():
-                        text = counter.text
-                        if text.isdigit():
-                            assert int(text) >= 0
+        main_page = MainPage(driver)
+        main_page.open()
+        counter_value = main_page.get_ingredient_counter_value(0)
+        assert isinstance(counter_value, int)
+        assert counter_value >= 0
